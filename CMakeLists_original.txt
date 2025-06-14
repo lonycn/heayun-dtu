@@ -1,0 +1,155 @@
+cmake_minimum_required(VERSION 3.18)
+
+# 项目基本信息
+project(hua-cool-dtu 
+    VERSION 1.0.0
+    DESCRIPTION "智能电箱控制系统 - 基于NANO100B微控制器"
+    LANGUAGES C ASM
+)
+
+# 设置C标准
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+# 设置构建类型
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type" FORCE)
+endif()
+
+# ARM Cortex-M0工具链配置
+set(CMAKE_SYSTEM_NAME Generic)
+set(CMAKE_SYSTEM_PROCESSOR ARM)
+
+# 工具链路径 (适配Mac M4环境)
+set(TOOLCHAIN_PREFIX arm-none-eabi-)
+set(CMAKE_C_COMPILER ${TOOLCHAIN_PREFIX}gcc)
+set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}g++)
+set(CMAKE_ASM_COMPILER ${TOOLCHAIN_PREFIX}gcc)
+set(CMAKE_AR ${TOOLCHAIN_PREFIX}ar)
+set(CMAKE_OBJCOPY ${TOOLCHAIN_PREFIX}objcopy)
+set(CMAKE_OBJDUMP ${TOOLCHAIN_PREFIX}objdump)
+set(CMAKE_SIZE ${TOOLCHAIN_PREFIX}size)
+
+# 目标芯片配置 - NANO100B (ARM Cortex-M0)
+set(CPU_FLAGS "-mcpu=cortex-m0 -mthumb -mfloat-abi=soft")
+set(NANO100B_FLAGS "-DNANO100B -DARM_MATH_CM0")
+
+# 编译器标志
+set(CMAKE_C_FLAGS "${CPU_FLAGS} ${NANO100B_FLAGS}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wpedantic")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdata-sections -ffunction-sections")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-common -fmessage-length=0")
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -specs=nosys.specs -specs=nano.specs")  # 在Mac环境下可能不可用
+
+# Debug配置
+set(CMAKE_C_FLAGS_DEBUG "-Og -g3 -DDEBUG")
+set(CMAKE_C_FLAGS_RELEASE "-Os -DNDEBUG")
+
+# 链接器标志
+set(CMAKE_EXE_LINKER_FLAGS "${CPU_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--print-memory-usage")
+# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --specs=nosys.specs --specs=nano.specs")  # 在Mac环境下可能不可用
+
+# 内存配置 - NANO100B规格
+# Flash: 64KB, RAM: 8KB
+set(FLASH_SIZE "64K")
+set(RAM_SIZE "8K")
+
+# 头文件包含路径
+include_directories(
+    ${CMAKE_SOURCE_DIR}/inc
+    ${CMAKE_SOURCE_DIR}/inc/common
+    ${CMAKE_SOURCE_DIR}/inc/drivers
+    ${CMAKE_SOURCE_DIR}/inc/app
+)
+
+# 源文件收集
+file(GLOB_RECURSE CORE_SOURCES "src/core/*.c")
+file(GLOB_RECURSE DRIVER_SOURCES "src/drivers/*.c")
+file(GLOB_RECURSE APP_SOURCES "src/app/*.c")
+
+# 创建源文件组
+set(ALL_SOURCES 
+    ${CORE_SOURCES}
+    ${DRIVER_SOURCES}
+    ${APP_SOURCES}
+)
+
+# 主要可执行文件
+add_executable(${PROJECT_NAME}.elf ${ALL_SOURCES})
+
+# 链接库 (如果需要)
+target_link_libraries(${PROJECT_NAME}.elf
+    # m  # 数学库 (如果需要浮点运算)
+)
+
+# 生成额外的输出格式
+add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:${PROJECT_NAME}.elf> ${PROJECT_NAME}.hex
+    COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${PROJECT_NAME}.elf> ${PROJECT_NAME}.bin
+    COMMAND ${CMAKE_SIZE} $<TARGET_FILE:${PROJECT_NAME}.elf>
+    COMMENT "生成HEX和BIN文件，显示内存使用情况"
+)
+
+# 编译信息显示
+add_custom_target(info
+    COMMAND echo "===== 憨云DTU项目信息 ====="
+    COMMAND echo "项目名称: ${PROJECT_NAME}"
+    COMMAND echo "版本: ${PROJECT_VERSION}"
+    COMMAND echo "构建类型: ${CMAKE_BUILD_TYPE}"
+    COMMAND echo "目标芯片: NANO100B (ARM Cortex-M0)"
+    COMMAND echo "Flash大小: ${FLASH_SIZE}"
+    COMMAND echo "RAM大小: ${RAM_SIZE}"
+    COMMAND echo "工具链: ${TOOLCHAIN_PREFIX}"
+    COMMAND echo "=========================="
+)
+
+# Flash烧录目标 (使用OpenOCD)
+add_custom_target(flash
+    DEPENDS ${PROJECT_NAME}.elf
+    COMMAND openocd -f interface/jlink.cfg -f target/nano100.cfg 
+            -c "program ${PROJECT_NAME}.elf verify reset exit"
+    COMMENT "烧录固件到NANO100B"
+)
+
+# 清理目标
+add_custom_target(clean-all
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}
+    COMMENT "清理所有构建文件"
+)
+
+# 内存使用分析
+add_custom_target(memory-analysis
+    DEPENDS ${PROJECT_NAME}.elf
+    COMMAND ${CMAKE_OBJDUMP} -h $<TARGET_FILE:${PROJECT_NAME}.elf>
+    COMMAND ${CMAKE_SIZE} -A $<TARGET_FILE:${PROJECT_NAME}.elf>
+    COMMENT "详细内存使用分析"
+)
+
+# 测试支持 (暂时禁用，等测试框架完成后再开启)
+option(ENABLE_TESTING "启用测试" OFF)
+if(ENABLE_TESTING)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+# 安装配置
+install(FILES 
+    ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.hex
+    ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.bin
+    DESTINATION bin
+)
+
+# 显示配置总结
+message(STATUS "")
+message(STATUS "===== 憨云DTU构建配置 =====")
+message(STATUS "项目: ${PROJECT_NAME} v${PROJECT_VERSION}")
+message(STATUS "构建类型: ${CMAKE_BUILD_TYPE}")
+message(STATUS "编译器: ${CMAKE_C_COMPILER}")
+message(STATUS "目标芯片: NANO100B (ARM Cortex-M0)")
+message(STATUS "内存配置: Flash=${FLASH_SIZE}, RAM=${RAM_SIZE}")
+message(STATUS "C标准: C${CMAKE_C_STANDARD}")
+message(STATUS "测试: ${ENABLE_TESTING}")
+message(STATUS "==============================")
+message(STATUS "") 

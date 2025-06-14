@@ -1,0 +1,104 @@
+cmake_minimum_required(VERSION 3.15)
+
+# 项目基本信息
+project(hua-cool-dtu 
+    VERSION 1.0.0
+    DESCRIPTION "憨云DTU - 智能电箱控制系统"
+    LANGUAGES C ASM
+)
+
+# 设置C标准
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
+# 目标处理器设置
+set(CPU_FLAGS "-mcpu=cortex-m0 -mthumb -mfloat-abi=soft")
+
+# 编译选项
+set(CMAKE_C_FLAGS "${CPU_FLAGS} -Wall -Wextra -Wpedantic -fdata-sections -ffunction-sections -std=c99")
+
+# Debug配置
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Debug")
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -g3 -DDEBUG")
+else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -DNDEBUG")
+endif()
+
+# 链接选项
+set(CMAKE_EXE_LINKER_FLAGS "${CPU_FLAGS} -T${CMAKE_SOURCE_DIR}/nano100b.ld -Wl,--gc-sections -Wl,--print-memory-usage -specs=nano.specs -specs=nosys.specs")
+
+# 头文件包含路径
+include_directories(
+    ${CMAKE_SOURCE_DIR}/inc
+)
+
+# 源文件收集
+file(GLOB_RECURSE CORE_SOURCES "src/core/*.c")
+file(GLOB_RECURSE DRIVER_SOURCES "src/drivers/*.c")
+file(GLOB_RECURSE APP_SOURCES "src/app/*.c")
+file(GLOB_RECURSE WIRELESS_SOURCES "src/wireless/*.c")
+file(GLOB_RECURSE SYSTEM_SOURCES "src/system/*.c")
+
+# 主要可执行文件
+add_executable(${PROJECT_NAME}.elf ${CORE_SOURCES} ${DRIVER_SOURCES} ${APP_SOURCES} ${WIRELESS_SOURCES} ${SYSTEM_SOURCES})
+
+# 生成二进制文件
+add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${PROJECT_NAME}.elf> ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.bin
+    COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:${PROJECT_NAME}.elf> ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.hex
+    COMMAND ${CMAKE_SIZE} $<TARGET_FILE:${PROJECT_NAME}.elf>
+    COMMENT "生成二进制文件和显示大小信息"
+)
+
+# 测试支持
+option(ENABLE_TESTING "Enable testing" OFF)
+
+if(ENABLE_TESTING)
+    enable_testing()
+    
+    # 测试框架源文件
+    file(GLOB_RECURSE TEST_FRAMEWORK_SOURCES "tests/framework/*.c")
+    file(GLOB_RECURSE TEST_UNIT_SOURCES "tests/unit/*/*.c")
+    
+    # 创建测试可执行文件
+    add_executable(test_runner 
+        tests/test_runner.c
+        ${TEST_FRAMEWORK_SOURCES}
+        ${TEST_UNIT_SOURCES}
+        ${CORE_SOURCES}
+        ${DRIVER_SOURCES}
+        ${APP_SOURCES}
+        ${WIRELESS_SOURCES}
+        ${SYSTEM_SOURCES}
+    )
+    
+    # 测试包含路径
+    target_include_directories(test_runner PRIVATE
+        ${CMAKE_SOURCE_DIR}/inc
+        ${CMAKE_SOURCE_DIR}/tests
+    )
+    
+    # 添加测试
+    add_test(NAME unit_tests COMMAND test_runner)
+    
+    message(STATUS "测试支持: 已启用")
+else()
+    message(STATUS "测试支持: 已禁用")
+endif()
+
+# 显示配置总结
+message(STATUS "")
+message(STATUS "===== 憨云DTU构建配置 (嵌入式版) =====")
+message(STATUS "项目: ${PROJECT_NAME} v${PROJECT_VERSION}")
+message(STATUS "构建类型: ${CMAKE_BUILD_TYPE}")
+message(STATUS "编译器: ${CMAKE_C_COMPILER}")
+message(STATUS "目标处理器: ARM Cortex-M0 (NANO100B)")
+message(STATUS "C标准: C${CMAKE_C_STANDARD}")
+message(STATUS "编译标志: ${CMAKE_C_FLAGS}")
+message(STATUS "链接标志: ${CMAKE_EXE_LINKER_FLAGS}")
+message(STATUS "===================================")
+message(STATUS "") 

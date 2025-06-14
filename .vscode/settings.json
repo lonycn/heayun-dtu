@@ -1,0 +1,8 @@
+{
+  "files.associations": {
+    "电箱控制程序修改说明.C": "cpp",
+    "电箱控制程序修改说明 copy.C": "cpp",
+    "HistoryData.C": "cpp",
+    "oled.h": "c"
+  }
+}
