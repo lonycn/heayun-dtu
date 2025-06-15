@@ -78,7 +78,7 @@ static void system_clock_init(void)
  */
 static void gpio_init(void)
 {
-    // 1. 系统状态指示灯 - PA0 (推挽输出)
+    // 1. 系统状态指示灯 - PC8 (推挽输出，根据硬件工程师确认)
     GPIO_SET_MODE(SYSTEM_LED_PORT, SYSTEM_LED_PIN, GPIO_PMD_OUTPUT);
     GPIO_CLEAR_PIN(SYSTEM_LED_PORT, SYSTEM_LED_BIT); // 初始关闭
 
@@ -95,7 +95,7 @@ static void gpio_init(void)
     GPIO_SET_PIN(OLED_SCL_PORT, OLED_SCL_BIT); // 初始高电平
     GPIO_SET_PIN(OLED_SDA_PORT, OLED_SDA_BIT); // 初始高电平
 
-    // 5. 蜂鸣器 - PB6 (PWM输出)
+    // 5. 蜂鸣器 - PA6 (PWM输出，根据硬件工程师确认)
     GPIO_SET_MODE(BUZZER_PORT, BUZZER_PIN, GPIO_PMD_OUTPUT);
     GPIO_CLEAR_PIN(BUZZER_PORT, BUZZER_BIT); // 初始关闭
 }

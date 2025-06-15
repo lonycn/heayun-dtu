@@ -257,7 +257,7 @@ void HardFault_Handler(void)
 
         // 尝试控制 LED (如果 GPIO 还能工作的话)
         // 这里使用直接寄存器操作，避免函数调用
-        REG32(GPIOA_BASE + GPIO_DOUT_OFFSET) ^= BIT(0);
+        REG32(GPIOC_BASE + GPIO_DOUT_OFFSET) ^= BIT(8); // PC8 系统状态LED
     }
 }
 

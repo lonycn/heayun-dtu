@@ -24,10 +24,10 @@ typedef unsigned char uint8_t;
 #define CLK_BASE 0x50000200UL
 #define CLK_AHBCLK (*(volatile uint32_t *)(CLK_BASE + 0x04))
 
-// LED 控制 (假设 PA0 连接 LED)
-#define LED_PIN 0
-#define LED_ON() (GPIOA_DOUT |= (1U << LED_PIN))
-#define LED_OFF() (GPIOA_DOUT &= ~(1U << LED_PIN))
+// LED 控制 (PC8 连接 LED，根据硬件工程师确认)
+#define LED_PIN 8
+#define LED_ON() (GPIOC_DOUT |= (1U << LED_PIN))
+#define LED_OFF() (GPIOC_DOUT &= ~(1U << LED_PIN))
 
 /**
  * 简单延时函数
@@ -47,12 +47,12 @@ static void delay_ms(uint32_t ms)
  */
 static void gpio_init(void)
 {
-    // 使能 GPIOA 时钟
-    CLK_AHBCLK |= (1U << 2);
+    // 使能 GPIOC 时钟
+    CLK_AHBCLK |= (1U << 4); // GPIOC 时钟使能
 
-    // 配置 PA0 为输出模式
-    GPIOA_MODE &= ~(3U << (LED_PIN * 2));
-    GPIOA_MODE |= (1U << (LED_PIN * 2));
+    // 配置 PC8 为输出模式 (系统状态LED)
+    GPIOC_MODE &= ~(3U << (LED_PIN * 2));
+    GPIOC_MODE |= (1U << (LED_PIN * 2));
 
     // 初始状态 LED 关闭
     LED_OFF();

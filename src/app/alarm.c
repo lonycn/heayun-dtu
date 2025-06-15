@@ -1004,9 +1004,10 @@ static void alarm_setup_default_config(void)
     g_alarm.config.outputs[0].pulse_duty = 50;     // 50%
     g_alarm.config.outputs[0].enabled = true;
 
-    // 蜂鸣器输出配置 (假设使用PB6)
+    // 蜂鸣器输出配置 (使用PA6，根据硬件工程师确认)
     g_alarm.config.outputs[1].type = ALARM_OUTPUT_BUZZER;
-    g_alarm.config.outputs[1].gpio_pin = 6; // PB6
+    g_alarm.config.outputs[1].gpio_pin = 6; // PA6
+    g_alarm.config.outputs[1].gpio_port = 0; // Port A
     g_alarm.config.outputs[1].active_high = true;
     g_alarm.config.outputs[1].pulse_period = 500; // 0.5秒
     g_alarm.config.outputs[1].pulse_duty = 20;    // 20%

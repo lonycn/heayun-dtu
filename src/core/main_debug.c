@@ -43,41 +43,41 @@ static void simple_gpio_init(void)
     // 1. 使能GPIO时钟 (如果需要)
     // NANO100B可能需要使能GPIO时钟，但先尝试不使能
 
-    // 2. 配置PA0为输出模式 (系统状态LED)
-    // PA0 = bit 0, 需要设置PMD0的bit[1:0] = 01 (推挽输出)
-    REG32(GPIOA_BASE + GPIO_PMD_OFFSET) &= ~(0x3 << 0); // 清除bit[1:0]
-    REG32(GPIOA_BASE + GPIO_PMD_OFFSET) |= (0x1 << 0);  // 设置为01 (推挽输出)
+    // 2. 配置PC8为输出模式 (系统状态LED，根据硬件工程师确认)
+    // PC8 = bit 8, 需要设置PMD8的bit[17:16] = 01 (推挽输出)
+    REG32(GPIOC_BASE + GPIO_PMD_OFFSET) &= ~(0x3 << 16); // 清除bit[17:16]
+    REG32(GPIOC_BASE + GPIO_PMD_OFFSET) |= (0x1 << 16);  // 设置为01 (推挽输出)
 
     // 3. 配置PA1为输出模式 (调试LED)
     REG32(GPIOA_BASE + GPIO_PMD_OFFSET) &= ~(0x3 << 2); // 清除bit[3:2]
     REG32(GPIOA_BASE + GPIO_PMD_OFFSET) |= (0x1 << 2);  // 设置为01 (推挽输出)
 
-    // 4. 配置PB6为输出模式 (蜂鸣器)
-    REG32(GPIOB_BASE + GPIO_PMD_OFFSET) &= ~(0x3 << 12); // 清除bit[13:12]
-    REG32(GPIOB_BASE + GPIO_PMD_OFFSET) |= (0x1 << 12);  // 设置为01 (推挽输出)
+    // 4. 配置PA6为输出模式 (蜂鸣器，根据硬件工程师确认)
+    REG32(GPIOA_BASE + GPIO_PMD_OFFSET) &= ~(0x3 << 12); // 清除bit[13:12]
+    REG32(GPIOA_BASE + GPIO_PMD_OFFSET) |= (0x1 << 12);  // 设置为01 (推挽输出)
 
     // 5. 初始状态：所有输出为低电平
-    REG32(GPIOA_BASE + GPIO_DOUT_OFFSET) &= ~(1 << 0); // PA0 = 0
+    REG32(GPIOC_BASE + GPIO_DOUT_OFFSET) &= ~(1 << 8); // PC8 = 0
     REG32(GPIOA_BASE + GPIO_DOUT_OFFSET) &= ~(1 << 1); // PA1 = 0
-    REG32(GPIOB_BASE + GPIO_DOUT_OFFSET) &= ~(1 << 6); // PB6 = 0
+    REG32(GPIOA_BASE + GPIO_DOUT_OFFSET) &= ~(1 << 6); // PA6 = 0
 }
 
 /**
  * @brief 设置LED状态
- * @param led_num LED编号 (0=PA0, 1=PA1)
+ * @param led_num LED编号 (0=PC8, 1=PA1)
  * @param state TRUE=点亮, FALSE=熄灭
  */
 static void set_led(uint8_t led_num, boolean_t state)
 {
-    if (led_num == 0) // PA0
+    if (led_num == 0) // PC8 (系统状态LED)
     {
         if (state)
         {
-            REG32(GPIOA_BASE + GPIO_DOUT_OFFSET) |= (1 << 0); // PA0 = 1
+            REG32(GPIOC_BASE + GPIO_DOUT_OFFSET) |= (1 << 8); // PC8 = 1
         }
         else
         {
-            REG32(GPIOA_BASE + GPIO_DOUT_OFFSET) &= ~(1 << 0); // PA0 = 0
+            REG32(GPIOC_BASE + GPIO_DOUT_OFFSET) &= ~(1 << 8); // PC8 = 0
         }
     }
     else if (led_num == 1) // PA1
@@ -101,11 +101,11 @@ static void set_buzzer(boolean_t state)
 {
     if (state)
     {
-        REG32(GPIOB_BASE + GPIO_DOUT_OFFSET) |= (1 << 6); // PB6 = 1
+        REG32(GPIOA_BASE + GPIO_DOUT_OFFSET) |= (1 << 6); // PA6 = 1
     }
     else
     {
-        REG32(GPIOB_BASE + GPIO_DOUT_OFFSET) &= ~(1 << 6); // PB6 = 0
+        REG32(GPIOA_BASE + GPIO_DOUT_OFFSET) &= ~(1 << 6); // PA6 = 0
     }
 }
 
@@ -126,7 +126,7 @@ int main(void)
     for (uint8_t i = 0; i < 5; i++)
     {
         // 全部开启
-        set_led(0, TRUE);     // PA0 LED
+        set_led(0, TRUE);     // PC8 LED (系统状态指示灯)
         set_led(1, TRUE);     // PA1 LED
         set_buzzer(TRUE);     // 蜂鸣器
         simple_delay(500000); // 约100ms延时
