@@ -35,13 +35,21 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections -Wl,--pr
 # 源文件配置
 # ================================================================
 
-# 完整版本源文件
+# 最简化调试测试 (逐步调试硬件问题)
 set(SOURCES
     # 核心系统文件
-    src/core/main.c
-    src/core/system.c
+    src/core/main_minimal_debug.c
     src/core/startup.c
-    
+
+    # 注释掉其他文件，专注于最简化测试
+    # src/core/main_old_project_based.c
+    # src/core/main_fixed_hardware_test.c
+    # src/core/main_oled_test.c
+    # src/drivers/oled_ssd1306.c
+    # src/core/main_hardware_test.c
+    # src/core/main.c
+    # src/core/system.c
+
     # 驱动文件 (如果存在)
     # src/drivers/gpio.c
     # src/drivers/uart.c
@@ -50,7 +58,7 @@ set(SOURCES
     # src/drivers/spi.c
     # src/drivers/timer.c
     # src/drivers/pwm.c
-    
+
     # 应用文件 (如果存在)
     # src/app/modbus.c
     # src/app/lora.c

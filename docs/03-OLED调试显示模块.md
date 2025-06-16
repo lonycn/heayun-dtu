@@ -893,3 +893,6 @@ void debug_task(void)
 _文档版本：v1.0_  
 _创建日期：2025 年 3 月 28 日_  
 _适用硬件：NANO100B + SSD1306 OLED_
+
+### PS：
+硬件说明：0.91寸的单色OLED驱动板，点阵数为128*64，采用iic通讯接口方式，cpu使用PC14作为iic的时钟信号，PA12作为sda数据线，oled使用ssd1306液晶驱动芯片，你需要写出一个完整的驱动程序，主程序通过调用sendString（*str）sendPic(*pic）完成字符串的显示（包括汉字）和图片的显示

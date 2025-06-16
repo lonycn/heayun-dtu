@@ -16,30 +16,39 @@
 #include "nano100b_types.h"
 
 // ================================================================
-// 基础地址定义
+// 基础地址定义 (基于厂家SDK修正)
 // ================================================================
 
-// 外设基地址
+// 外设基地址 (NANO100B实际地址)
 #define PERIPH_BASE 0x40000000UL
 #define AHB_BASE (PERIPH_BASE + 0x00020000UL)
 #define APB1_BASE (PERIPH_BASE + 0x00000000UL)
 #define APB2_BASE (PERIPH_BASE + 0x00010000UL)
 
-// GPIO 基地址
-#define GPIOA_BASE (AHB_BASE + 0x4000UL)
-#define GPIOB_BASE (AHB_BASE + 0x4040UL)
-#define GPIOC_BASE (AHB_BASE + 0x4080UL)
-#define GPIOD_BASE (AHB_BASE + 0x40C0UL)
-#define GPIOE_BASE (AHB_BASE + 0x4100UL)
-#define GPIOF_BASE (AHB_BASE + 0x4140UL)
+// GPIO 基地址 (修正为NANO100B实际地址)
+#define GPIOA_BASE 0x50004000UL
+#define GPIOB_BASE 0x50004040UL
+#define GPIOC_BASE 0x50004080UL
+#define GPIOD_BASE 0x500040C0UL
+#define GPIOE_BASE 0x50004100UL
+#define GPIOF_BASE 0x50004140UL
 
-// 系统控制基地址
-#define SYS_BASE (AHB_BASE + 0x0000UL)
-#define CLK_BASE (AHB_BASE + 0x0200UL)
+// 系统控制基地址 (修正为NANO100B实际地址)
+#define SYS_BASE 0x50000000UL
+#define CLK_BASE 0x50000200UL
 
-// PWM 基地址
-#define PWM0_BASE (APB1_BASE + 0x40000UL)
-#define PWM1_BASE (APB1_BASE + 0x41000UL)
+// PWM 基地址 (修正为NANO100B实际地址)
+#define PWM0_BASE 0x40040000UL
+#define PWM1_BASE 0x40041000UL
+
+// 时钟控制寄存器偏移
+#define CLK_PWRCTL_OFFSET 0x00
+#define CLK_AHBCLK_OFFSET 0x04
+#define CLK_APBCLK_OFFSET 0x08
+#define CLK_CLKSEL0_OFFSET 0x10
+#define CLK_CLKSEL1_OFFSET 0x14
+#define CLK_CLKDIV_OFFSET 0x18
+#define CLK_CLKSTATUS_OFFSET 0x50
 
 // ================================================================
 // GPIO 寄存器偏移定义
@@ -90,37 +99,37 @@
 #define PWM_POE_OFFSET 0x7C    // 输出使能寄存器
 
 // ================================================================
-// 项目特定的GPIO引脚定义 (根据硬件接口说明文档)
+// 项目特定的GPIO引脚定义 (基于厂家驱动修正)
 // ================================================================
 
-// 系统状态指示灯 - PA0 (根据硬件文档)
-#define SYSTEM_LED_PORT GPIOA_BASE
-#define SYSTEM_LED_PIN 0
-#define SYSTEM_LED_BIT BIT(0)
+// 系统状态指示灯 - PC8 (基于旧项目确认)
+#define SYSTEM_LED_PORT GPIOC_BASE
+#define SYSTEM_LED_PIN 8
+#define SYSTEM_LED_BIT (1UL << 8)
 
-// OLED显示 - 软件I2C
-#define OLED_SCL_PORT GPIOC_BASE
-#define OLED_SCL_PIN 9
-#define OLED_SCL_BIT BIT(9)
+// OLED显示 - I2C (基于旧项目确认)
+#define OLED_SCL_PORT GPIOA_BASE
+#define OLED_SCL_PIN 14
+#define OLED_SCL_BIT (1UL << 14)
 
 #define OLED_SDA_PORT GPIOA_BASE
 #define OLED_SDA_PIN 12
-#define OLED_SDA_BIT BIT(12)
+#define OLED_SDA_BIT (1UL << 12)
 
-// 蜂鸣器 - PB6 (根据硬件文档)
-#define BUZZER_PORT GPIOB_BASE
+// 蜂鸣器 - PA6 (基于旧项目确认，使用PWM0_CH3)
+#define BUZZER_PORT GPIOA_BASE
 #define BUZZER_PIN 6
-#define BUZZER_BIT BIT(6)
+#define BUZZER_BIT (1UL << 6)
 
 // 调试LED - PA1 (可选)
 #define DEBUG_LED_PORT GPIOA_BASE
 #define DEBUG_LED_PIN 1
-#define DEBUG_LED_BIT BIT(1)
+#define DEBUG_LED_BIT (1UL << 1)
 
 // 用户按键 - PA2 (可选)
 #define USER_BUTTON_PORT GPIOA_BASE
 #define USER_BUTTON_PIN 2
-#define USER_BUTTON_BIT BIT(2)
+#define USER_BUTTON_BIT (1UL << 2)
 
 // ================================================================
 // GPIO 模式定义
@@ -172,5 +181,38 @@
 // PWM 操作宏
 #define PWM_ENABLE_CH0() SET_BIT(REG32(PWM0_BASE + PWM_PCR_OFFSET), PWM_PCR_CH0EN)
 #define PWM_DISABLE_CH0() CLEAR_BIT(REG32(PWM0_BASE + PWM_PCR_OFFSET), PWM_PCR_CH0EN)
+
+// ================================================================
+// 时钟控制位定义 (基于厂家SDK)
+// ================================================================
+
+// PWRCTL 寄存器位定义
+#define CLK_PWRCTL_HIRC_EN BIT(2)    // 内部高速RC振荡器使能
+#define CLK_PWRCTL_LIRC_EN BIT(3)    // 内部低速RC振荡器使能
+
+// AHBCLK 寄存器位定义
+#define CLK_AHBCLK_GPIO_EN BIT(2)    // GPIO时钟使能
+#define CLK_AHBCLK_DMA_EN BIT(1)     // DMA时钟使能
+
+// APBCLK 寄存器位定义
+#define CLK_APBCLK_UART0_EN (1UL << 16)  // UART0时钟使能
+#define CLK_APBCLK_UART1_EN (1UL << 17)  // UART1时钟使能
+#define CLK_APBCLK_TMR0_EN (1UL << 2)    // Timer0时钟使能
+#define CLK_APBCLK_TMR1_EN (1UL << 3)    // Timer1时钟使能
+#define CLK_APBCLK_PWM0_EN (1UL << 20)   // PWM0时钟使能
+#define CLK_APBCLK_PWM1_EN (1UL << 21)   // PWM1时钟使能
+#define CLK_APBCLK_ADC_EN (1UL << 28)    // ADC时钟使能
+
+// CLKSEL0 寄存器位定义
+#define CLK_CLKSEL0_HCLK_S_HIRC (0x0UL << 0)  // HCLK时钟源选择HIRC
+
+// CLKSTATUS 寄存器位定义
+#define CLK_CLKSTATUS_HIRC_STB BIT(2)  // HIRC稳定标志
+
+// 时钟控制宏
+#define CLK_ENABLE_HIRC() SET_BIT(REG32(CLK_BASE + CLK_PWRCTL_OFFSET), CLK_PWRCTL_HIRC_EN)
+#define CLK_ENABLE_GPIO() SET_BIT(REG32(CLK_BASE + CLK_AHBCLK_OFFSET), CLK_AHBCLK_GPIO_EN)
+#define CLK_ENABLE_PWM0() SET_BIT(REG32(CLK_BASE + CLK_APBCLK_OFFSET), CLK_APBCLK_PWM0_EN)
+#define CLK_WAIT_HIRC_READY() while(!(REG32(CLK_BASE + CLK_CLKSTATUS_OFFSET) & CLK_CLKSTATUS_HIRC_STB))
 
 #endif /* __NANO100B_REG_H__ */

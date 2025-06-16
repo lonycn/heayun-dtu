@@ -63,10 +63,10 @@ typedef enum
 
 // 位操作宏
 #define BIT(n) (1UL << (n))
-#define SET_BIT(reg, bit) ((reg) |= BIT(bit))
-#define CLEAR_BIT(reg, bit) ((reg) &= ~BIT(bit))
-#define READ_BIT(reg, bit) (((reg) >> (bit)) & 1UL)
-#define TOGGLE_BIT(reg, bit) ((reg) ^= BIT(bit))
+#define SET_BIT(reg, bit) ((reg) |= (bit))
+#define CLEAR_BIT(reg, bit) ((reg) &= ~(bit))
+#define READ_BIT(reg, bit) (((reg) & (bit)) ? 1UL : 0UL)
+#define TOGGLE_BIT(reg, bit) ((reg) ^= (bit))
 
 // 寄存器操作宏
 #define REG8(addr) (*(volatile uint8_t *)(addr))

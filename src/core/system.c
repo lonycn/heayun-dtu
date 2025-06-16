@@ -29,13 +29,13 @@ static volatile boolean_t g_system_initialized = FALSE; // 系统初始化标志
 /**
  * @brief 微秒级延时函数
  * @param us 延时微秒数
- * @note 基于CPU指令周期的软件延时，42MHz主频
+ * @note 基于CPU指令周期的软件延时，12MHz主频
  */
 void delay_us(uint32_t us)
 {
-    // 42MHz = 42 cycles per microsecond
-    // 考虑指令执行开销，使用约35个循环
-    volatile uint32_t count = us * 35;
+    // 12MHz = 12 cycles per microsecond
+    // 考虑指令执行开销，使用约10个循环
+    volatile uint32_t count = us * 10;
     while (count--)
     {
         __asm volatile("nop");
@@ -60,13 +60,27 @@ void delay_ms(uint32_t ms)
 
 /**
  * @brief 系统时钟初始化
- * @note 配置为42MHz主频
+ * @note 配置为12MHz主频 (HIRC内部高速RC振荡器)
  */
 static void system_clock_init(void)
 {
-    // 简化的时钟配置
-    // 实际项目中需要根据NANO100B数据手册配置PLL
-    // 当前使用内部RC振荡器
+    // 1. 使能内部高速RC振荡器 (HIRC 12MHz)
+    CLK_ENABLE_HIRC();
+
+    // 2. 等待HIRC稳定
+    CLK_WAIT_HIRC_READY();
+
+    // 3. 切换系统时钟源到HIRC
+    REG32(CLK_BASE + CLK_CLKSEL0_OFFSET) &= ~(0x7UL << 0);
+    REG32(CLK_BASE + CLK_CLKSEL0_OFFSET) |= CLK_CLKSEL0_HCLK_S_HIRC;
+
+    // 4. 使能必要的外设时钟
+    CLK_ENABLE_GPIO();  // GPIO时钟
+    CLK_ENABLE_PWM0();  // PWM0时钟 (蜂鸣器用)
+
+    // 5. 简单延时确保时钟稳定
+    volatile uint32_t delay = 1000;
+    while(delay--);
 }
 
 // ================================================================
@@ -111,15 +125,15 @@ static void gpio_init(void)
  */
 static void pwm_init(void)
 {
-    // 配置PWM预分频器 (假设系统时钟42MHz)
-    // 目标频率: 2kHz, 周期 = 42MHz / (预分频 * 分频 * 周期值)
-    // 使用预分频1，分频1，周期值10500 -> 42MHz/10500 = 4kHz
-    // 使用预分频1，分频2，周期值10500 -> 42MHz/(2*10500) = 2kHz
+    // 配置PWM预分频器 (系统时钟12MHz)
+    // 目标频率: 2kHz, 周期 = 12MHz / (预分频 * 分频 * 周期值)
+    // 使用预分频1，分频1，周期值3000 -> 12MHz/3000 = 4kHz
+    // 使用预分频1，分频2，周期值3000 -> 12MHz/(2*3000) = 2kHz
 
     REG32(PWM0_BASE + PWM_PPR_OFFSET) = 0;                 // 预分频器设为1
     REG32(PWM0_BASE + PWM_CSR_OFFSET) = PWM_CSR_CSR0_DIV2; // 时钟分频2
-    REG32(PWM0_BASE + PWM_CNR0_OFFSET) = 10500;            // 周期值
-    REG32(PWM0_BASE + PWM_CMR0_OFFSET) = 5250;             // 占空比50%
+    REG32(PWM0_BASE + PWM_CNR0_OFFSET) = 3000;             // 周期值
+    REG32(PWM0_BASE + PWM_CMR0_OFFSET) = 1500;             // 占空比50%
 
     // 禁用PWM输出 (初始状态)
     PWM_DISABLE_CH0();
