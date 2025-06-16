@@ -13,6 +13,7 @@
 #include "../../inc/nano100b_types.h"
 #include "../../inc/nano100b_reg.h"
 #include "../../inc/system.h"
+#include "../drivers/oled_fonts.h"
 
 // ================================================================
 // 全局变量定义
@@ -78,7 +79,7 @@ static void system_clock_init(void)
  */
 static void gpio_init(void)
 {
-    // 1. 系统状态指示灯 - PC8 (推挽输出，根据硬件工程师确认)
+    // 1. 系统状态指示灯 - PA0 (推挽输出，根据硬件文档)
     GPIO_SET_MODE(SYSTEM_LED_PORT, SYSTEM_LED_PIN, GPIO_PMD_OUTPUT);
     GPIO_CLEAR_PIN(SYSTEM_LED_PORT, SYSTEM_LED_BIT); // 初始关闭
 
@@ -89,13 +90,13 @@ static void gpio_init(void)
     // 3. 用户按键 - PA2 (输入，内部上拉)
     GPIO_SET_MODE(USER_BUTTON_PORT, USER_BUTTON_PIN, GPIO_PMD_INPUT);
 
-    // 4. OLED I2C引脚 - PC14(SCL), PA12(SDA) (开漏输出，用于软件I2C)
+    // 4. OLED I2C引脚 - PC9(SCL), PA12(SDA) (开漏输出，用于软件I2C)
     GPIO_SET_MODE(OLED_SCL_PORT, OLED_SCL_PIN, GPIO_PMD_OPEN_DRAIN);
     GPIO_SET_MODE(OLED_SDA_PORT, OLED_SDA_PIN, GPIO_PMD_OPEN_DRAIN);
     GPIO_SET_PIN(OLED_SCL_PORT, OLED_SCL_BIT); // 初始高电平
     GPIO_SET_PIN(OLED_SDA_PORT, OLED_SDA_BIT); // 初始高电平
 
-    // 5. 蜂鸣器 - PA6 (PWM输出，根据硬件工程师确认)
+    // 5. 蜂鸣器 - PB6 (PWM输出，根据硬件文档)
     GPIO_SET_MODE(BUZZER_PORT, BUZZER_PIN, GPIO_PMD_OUTPUT);
     GPIO_CLEAR_PIN(BUZZER_PORT, BUZZER_BIT); // 初始关闭
 }
@@ -372,26 +373,45 @@ void oled_clear(void)
 }
 
 /**
- * @brief OLED显示字符串 (简化版)
+ * @brief OLED显示字符串
  * @param x 列位置 (0-127)
  * @param y 页位置 (0-7)
  * @param str 字符串
  */
 void oled_show_string(uint8_t x, uint8_t y, const char *str)
 {
-    // 简化实现：只显示基本字符
-    // 实际项目中需要字库支持
+    uint8_t current_x = x;
+    
     oled_write_cmd(0xB0 + y);          // 设置页地址
-    oled_write_cmd(0x00 + (x & 0x0F)); // 设置低列地址
-    oled_write_cmd(0x10 + (x >> 4));   // 设置高列地址
+    oled_write_cmd(0x00 + (current_x & 0x0F)); // 设置低列地址
+    oled_write_cmd(0x10 + (current_x >> 4));   // 设置高列地址
 
-    while (*str)
+    while (*str && current_x < 128)
     {
-        // 简单的字符显示 (需要字库数据)
-        for (uint8_t i = 0; i < 6; i++)
+        char c = *str;
+        
+        // 检查字符范围 (ASCII 32-90)
+        if (c >= 32 && c <= 90)
         {
-            oled_write_data(0xFF); // 临时显示全亮点
+            uint8_t char_index = c - 32; // 转换为字库索引
+            
+            // 显示字符的6个字节
+            for (uint8_t i = 0; i < 6 && current_x < 128; i++)
+            {
+                oled_write_data(F6x8[char_index][i]);
+                current_x++;
+            }
         }
+        else
+        {
+            // 不支持的字符，显示空格
+            for (uint8_t i = 0; i < 6 && current_x < 128; i++)
+            {
+                oled_write_data(0x00);
+                current_x++;
+            }
+        }
+        
         str++;
     }
 }

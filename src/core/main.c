@@ -14,6 +14,8 @@
 #include "../../inc/nano100b_reg.h"
 #include "../../inc/system.h"
 
+// 移除printf声明，嵌入式系统不需要
+
 // ================================================================
 // 全局变量定义
 // ================================================================
@@ -37,6 +39,25 @@ int main(void)
 
     // 系统硬件初始化 (包含启动效果：LED闪烁2次，蜂鸣器响2次)
     system_init();
+
+    // 启动指示：LED和蜂鸣器各闪烁2次
+    for (uint8_t i = 0; i < 2; i++)
+    {
+        led_set_status(TRUE);
+        buzzer_beep(1, 100, 100);
+        delay_ms(200);
+        led_set_status(FALSE);
+        delay_ms(200);
+    }
+
+    // OLED测试：显示HELLO
+    oled_clear();
+    delay_ms(100);
+    oled_show_string(0, 0, "HELLO");
+    oled_show_string(0, 2, "DTU SYSTEM");
+    oled_show_string(0, 4, "READY");
+
+    // 系统启动完成 (移除printf调用)
 
     // 设置系统运行标志
     g_system_running = true;

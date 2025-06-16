@@ -93,22 +93,22 @@
 // 项目特定的GPIO引脚定义 (根据硬件接口说明文档)
 // ================================================================
 
-// 系统状态指示灯 - PC8 (根据硬件工程师确认)
-#define SYSTEM_LED_PORT GPIOC_BASE
-#define SYSTEM_LED_PIN 8
-#define SYSTEM_LED_BIT BIT(8)
+// 系统状态指示灯 - PA0 (根据硬件文档)
+#define SYSTEM_LED_PORT GPIOA_BASE
+#define SYSTEM_LED_PIN 0
+#define SYSTEM_LED_BIT BIT(0)
 
 // OLED显示 - 软件I2C
 #define OLED_SCL_PORT GPIOC_BASE
-#define OLED_SCL_PIN 14
-#define OLED_SCL_BIT BIT(14)
+#define OLED_SCL_PIN 9
+#define OLED_SCL_BIT BIT(9)
 
 #define OLED_SDA_PORT GPIOA_BASE
 #define OLED_SDA_PIN 12
 #define OLED_SDA_BIT BIT(12)
 
-// 蜂鸣器 - PA6 (根据硬件工程师确认)
-#define BUZZER_PORT GPIOA_BASE
+// 蜂鸣器 - PB6 (根据硬件文档)
+#define BUZZER_PORT GPIOB_BASE
 #define BUZZER_PIN 6
 #define BUZZER_BIT BIT(6)
 
